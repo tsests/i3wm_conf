@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Укажите путь к каталогу с обоями
+WALLPAPER_DIR="$HOME/.config/i3/walls1"
+
+# Файл блокировки для предотвращения множественного запуска
+LOCKFILE="/tmp/change_wallpaper.lock"
+
+# Проверяем, запущен ли уже процесс
+if [ -e "$LOCKFILE" ] && kill -0 "$(cat "$LOCKFILE")" 2>/dev/null; then
+    echo "Скрипт уже запущен."
+    exit
+fi
+
+# Записываем PID текущего процесса в файл блокировки
+echo $$ > "$LOCKFILE"
+
+# Удаляем файл блокировки при выходе
+trap 'rm -f "$LOCKFILE"; exit' INT TERM EXIT
+
+# Функция для смены обоев и генерации цветовой схемы
+change_wallpaper() {
+    # Выбираем случайное изображение из каталога
+    WALLPAPER=$(find "$WALLPAPER_DIR" -type f | shuf -n 1)
+
+    # Меняем обои с помощью feh
+    feh --bg-fill "$WALLPAPER"
+
+    # Генерируем цветовую схему с помощью pywal
+    wal -i "$WALLPAPER"
+
+    # Перезагружаем i3, чтобы применить изменения (если нужно)
+    i3-msg reload
+}
+
+# Основной цикл, который меняет обои каждые 15 минут (900 секунд)
+while true; do
+    change_wallpaper
+    sleep 900
+done
+
